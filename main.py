@@ -1,115 +1,144 @@
-# Customer class stores details about a single customer
-class Customer:
-    def __init__(self, name, room_type):
-        self.name = name
-        self.room_type = room_type.lower()
-        self.days = 0
-        self.bill = 0
+from abc import ABC, abstractmethod
 
-    # Set how many days the customer is staying
+# Abstract Class (Abstraction)
+class AbstractCustomer(ABC):
+    @abstractmethod
+    def show_bill(self):
+        pass
+
+
+# Base Class (Encapsulation)
+class Customer(AbstractCustomer):
+    def __init__(self, name, room_type):
+        self._name = name  # private
+        self._room_type = room_type.lower()
+        self._days = 0
+        self._bill = 0
+
+    # Getter for name
+    def get_name(self):
+        return self._name
+
+    # Set number of days and calculate bill
     def set_days(self, days):
-        self.days = days
+        self._days = days
         self.calculate_bill()
 
-    # Calculate the bill based on room type and number of days
+    # Calculate bill based on room type
     def calculate_bill(self):
-        if self.room_type == "single":
-            rate = 1000
-        elif self.room_type == "double":
-            rate = 1800
-        elif self.room_type == "deluxe":
-            rate = 2500
-        else:
-            rate = 1000  # default to single room rate
+        rates = {"single": 1000, "double": 1500, "deluxe": 2500}
+        rate = rates.get(self._room_type, 1000)  # default to single
+        self._bill = self._days * rate
 
-        self.bill = rate * self.days
-
-    # Show the final bill
+    # Show bill (Polymorphic — will be overridden)
     def show_bill(self):
         print("\n----- BILL -----")
-        print(f"Name       : {self.name}")
-        print(f"Room Type  : {self.room_type.capitalize()}")
-        print(f"Days Stay  : {self.days}")
-        print(f"Total Bill : ₹{self.bill}")
+        print(f"Customer Name : {self._name}")
+        print(f"Room Type     : {self._room_type.capitalize()}")
+        print(f"Days Stayed   : {self._days}")
+        print(f"Total Bill    : ₹{self._bill}")
         print("----------------\n")
 
 
-# Hotel class manages all the customers
+# Child Class (Inheritance + Polymorphism)
+class LuxuryCustomer(Customer):
+    def __init__(self, name):
+        super().__init__(name, "deluxe")  # Always deluxe room
+
+    # Overriding show_bill (Polymorphism)
+    def show_bill(self):
+        self.calculate_bill()
+        gst = self._bill * 0.18
+        total = self._bill + gst
+        print("\n----- LUXURY BILL -----")
+        print(f"Customer Name : {self._name}")
+        print(f"Room Type     : {self._room_type.capitalize()}")
+        print(f"Base Bill     : ₹{self._bill}")
+        print(f"GST (18%)     : ₹{gst:.2f}")
+        print(f"Total Bill    : ₹{total:.2f}")
+        print("------------------------\n")
+
+
+# Hotel Class (Manages all customers)
 class Hotel:
     def __init__(self):
-        self.customers = []  # list to store all customer objects
+        self.customers = []
 
-    # Add new customer
+    # Add customer (normal or luxury)
     def add_customer(self, name, room_type):
-        new_customer = Customer(name, room_type)
-        self.customers.append(new_customer)
-        print(f"\nCustomer '{name}' added successfully!\n")
+        if room_type.lower() == "luxury":
+            customer = LuxuryCustomer(name)
+        else:
+            customer = Customer(name, room_type)
+        self.customers.append(customer)
+        print(f"{name} added successfully!\n")
 
     # Find customer by name
     def find_customer(self, name):
         for customer in self.customers:
-            if customer.name.lower() == name.lower():
+            if customer.get_name().lower() == name.lower():
                 return customer
         return None
 
-    # Show names of all customers
+    # Show all customers
     def show_customers(self):
         if not self.customers:
-            print("\nNo customers yet.\n")
+            print(" No customers yet.\n")
         else:
-            print("\nCurrent Customers:")
-            for customer in self.customers:
-                print(f"- {customer.name} ({customer.room_type})")
+            print("\n All Customers:")
+            for c in self.customers:
+                print(f"- {c.get_name()}")
             print()
 
-    # Remove customer after checkout
+    # Checkout customer
     def checkout_customer(self, name):
         customer = self.find_customer(name)
         if customer:
             customer.show_bill()
             self.customers.remove(customer)
-            print(f" '{name}' has been checked out.\n")
+            print(f" {name} checked out.\n")
         else:
-            print(" Customer not found.\n")
+            print("Customer not found.\n")
 
 
-# MENU SYSTEM (User Interface)
+
+# Menu-Driven Program (UI)
 
 
 hotel = Hotel()
 
 while True:
-    print("===== Hotel Management Menu =====")
-    print("1. Add New Customer")
-    print("2. Set Stay Duration")
-    print("3. Show Customer Bill")
+    print("========= HOTEL MENU =========")
+    print("1. Add Customer")
+    print("2. Set Stay Days")
+    print("3. Show Bill")
     print("4. Show All Customers")
-    print("5. Checkout Customer")
+    print("5. Checkout")
     print("6. Exit")
-    print("=================================")
+    print("==============================")
 
     choice = input("Enter your choice (1-6): ")
 
     if choice == "1":
-        name = input("Enter customer name: ")
-        room_type = input("Enter room type (Single/Double/Deluxe): ")
-        hotel.add_customer(name, room_type)
+        name = input("Enter name: ")
+        room = input("Enter room type (Single/Double/Deluxe/Luxury): ")
+        hotel.add_customer(name, room)
 
     elif choice == "2":
-        name = input("Enter customer name to set stay days: ")
-        customer = hotel.find_customer(name)
-        if customer:
+        name = input("Enter customer name: ")
+        c = hotel.find_customer(name)
+        if c:
             days = int(input("Enter number of days: "))
-            customer.set_days(days)
+            c.set_days(days)
             print(" Stay duration updated.\n")
         else:
             print(" Customer not found.\n")
 
     elif choice == "3":
-        name = input("Enter customer name to show bill: ")
-        customer = hotel.find_customer(name)
-        if customer:
-            customer.show_bill()
+        name = input("Enter customer name: ")
+        c = hotel.find_customer(name)
+        if c:
+            c.show_bill()
         else:
             print(" Customer not found.\n")
 
@@ -117,12 +146,12 @@ while True:
         hotel.show_customers()
 
     elif choice == "5":
-        name = input("Enter customer name to checkout: ")
+        name = input("Enter customer name: ")
         hotel.checkout_customer(name)
 
     elif choice == "6":
-        print("Exiting the system. Thank you!")
+        print(" Exiting Hotel System. Thank you!")
         break
 
     else:
-        print(" Invalid input. Try again.\n")
+        print(" Invalid choice. Try again.\n")
